@@ -15,8 +15,16 @@ class LoginUserDetailsService implements UserDetailsService {
 
     @Override
     UserDetails loadUserByUsername(String idString) throws UsernameNotFoundException {
-        long id = Long.parseLong(idString)
-        User user = userRepository.findOneById(id)
+        long id
+        User user
+
+        try {
+            id = Long.parseLong(idString)
+            user = userRepository.findOneById(id)
+        } catch (NumberFormatException ex) {
+            user = userRepository.findOneByUsername(idString)
+        }
+
         if (user == null) {
             throw new UsernameNotFoundException("The requested user is not found. $idString")
         }

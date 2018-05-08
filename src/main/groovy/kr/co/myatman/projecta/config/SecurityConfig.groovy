@@ -1,18 +1,24 @@
 package kr.co.myatman.projecta.config
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.core.Authentication
+import org.springframework.security.core.AuthenticationException
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.web.authentication.AuthenticationFailureHandler
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher
 import org.springframework.web.cors.CorsConfiguration
@@ -44,6 +50,13 @@ class SecurityConfig extends WebSecurityConfigurerAdapter {
         ////// API 관련
                 .antMatchers('/v1/account/test').authenticated()
                 .antMatchers('/**').permitAll()
+
+        http
+                .formLogin()
+                .loginPage('/signin').permitAll()
+                .successHandler(successHandler())
+                .failureHandler(failureHandler())
+                .usernameParameter('username').passwordParameter('password')
 
         http
                 .logout()
@@ -79,8 +92,37 @@ class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
+    AuthenticationSuccessHandler successHandler() {
+        return new CustomLoginSuccessHandler()
+    }
+
+    @Bean
+    AuthenticationFailureHandler failureHandler() {
+        return new CustomFailureSuccessHandler()
+    }
+
+    @Bean
     LogoutSuccessHandler logoutSuccessHandler() {
         return new CustomLogoutSuccessHandler()
+    }
+
+    static class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
+        @Override
+        public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws ServletException, IOException {
+            if (request.queryString == 'console') {
+                response.sendRedirect('/')
+            }
+        }
+    }
+
+    static class CustomFailureSuccessHandler implements AuthenticationFailureHandler {
+        @Override
+        void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
+            response.status = HttpStatus.BAD_REQUEST.value()
+            response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+            PrintWriter printWriter = response.getWriter()
+            printWriter.write(new ObjectMapper().writer().writeValueAsString(['message': exception.message]))
+        }
     }
 
     static class CustomLogoutSuccessHandler implements LogoutSuccessHandler {
