@@ -18,7 +18,8 @@ class User implements Serializable {
     @JsonView(View.class)
     String username
     String password
-    @Column(insertable = false, updatable = false)
+    //String registeredDate
+    @Column(insertable = false, updatable = false, columnDefinition = 'DATETIME default CURRENT_TIMESTAMP')
     @Temporal(TemporalType.TIMESTAMP)
     Date registeredDate
 
@@ -28,8 +29,8 @@ class User implements Serializable {
     Set<UserAuth> auths
 
     UserAuth addAuth(long authId) {
-        UserAuth userAuth = new UserAuth(pk: new UserAuth.PK(userId: id, authId: authId))
-        this.auths.add(userAuth)
+        UserAuth userAuth = new UserAuth( pk: new UserAuth.PK( userId: id, authId: authId ) )
+        this.auths.add( userAuth )
         return userAuth
     }
 
@@ -37,7 +38,7 @@ class User implements Serializable {
     Collection<? extends GrantedAuthority> getAuthorities() {
         if (auths == null || auths.size() == 0)
             return []
-        return AuthorityUtils.createAuthorityList(AuthorityUtils.authorityListToSet(auths).toArray(new String[auths.size()]))
+        return AuthorityUtils.createAuthorityList( AuthorityUtils.authorityListToSet( auths ).toArray( new String[auths.size()] ) )
     }
 
     // View

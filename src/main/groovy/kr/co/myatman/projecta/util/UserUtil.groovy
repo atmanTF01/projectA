@@ -16,7 +16,6 @@ import org.springframework.stereotype.Component
 class UserUtil {
     @Autowired
     private UserRepository userRepository
-
     @Autowired
     private PasswordEncoder passwordEncoder
     @Autowired
